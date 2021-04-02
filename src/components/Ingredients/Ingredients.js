@@ -6,7 +6,7 @@ import Search from "./Search";
 
 const Ingredients = () => {
   const [userIngredient, setUserIngredients] = useState([]);
-
+  const [isLoading, setIsLoading] = useState(false);
   // this is rendered whenever this component is rerendered
   // after and for every render cycle
 
@@ -30,6 +30,7 @@ const Ingredients = () => {
   }, []);
 
   const addIngredientHandler = (ingredient) => {
+    setIsLoading(true);
     fetch(
       "https://react-hooks-18607-default-rtdb.firebaseio.com/ingredients.json",
       {
@@ -39,6 +40,7 @@ const Ingredients = () => {
       }
     )
       .then((response) => {
+        setIsLoading(false);
         return response.json();
       })
       .then((resData) => {
@@ -48,13 +50,35 @@ const Ingredients = () => {
         ]);
       });
   };
+
+  const removeIngredientHandler = (ingredientId) => {
+    setIsLoading(true);
+    fetch(
+      `https://react-hooks-18607-default-rtdb.firebaseio.com/ingredients/${ingredientId}.json`,
+      {
+        method: "DELETE",
+      }
+    ).then((res) => {
+      setIsLoading(false);
+      setUserIngredients((prevIngredients) =>
+        prevIngredients.filter((ingredient) => ingredient.id !== ingredientId)
+      );
+    });
+  };
+
   return (
     <div className="App">
-      <IngredientForm onAddIngredient={addIngredientHandler} />
+      <IngredientForm
+        onAddIngredient={addIngredientHandler}
+        loading={isLoading}
+      />
 
       <section>
         <Search onLoadIngredients={filterIngredientHandler} />
-        <IngredientList ingredients={userIngredient} onRemoveItem={() => {}} />
+        <IngredientList
+          ingredients={userIngredient}
+          onRemoveItem={removeIngredientHandler}
+        />
       </section>
     </div>
   );
