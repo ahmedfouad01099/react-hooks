@@ -24,7 +24,14 @@ const ingredientReducer = (currentIngredients, action) => {
 
 const Ingredients = () => {
   const [userIngredients, dispatch] = useReducer(ingredientReducer, []);
-  const { isLoading, error, data, sendRequest } = useHttp();
+  const {
+    isLoading,
+    error,
+    data,
+    sendRequest,
+    reqExtra,
+    reqIdentifier,
+  } = useHttp();
   // another senario of using useReducer when you have conected state like isLoading & error
 
   // const [isLoading, setIsLoading] = useState(false);
@@ -42,8 +49,13 @@ const Ingredients = () => {
   // as we don't speciefiy a second argument here this will loged 2 times as we rendering this component twice
   // when we use setUserIngredients
   useEffect(() => {
-    console.log("RENDERING INGREDINETS", userIngredients);
-  }, [data]);
+    if (!isLoading && !error && reqIdentifier === "REMOVE_INGREDIENT")
+      if (reqExtra) {
+        dispatch({ type: "DELETE", id: reqExtra });
+      } else if (!isLoading && !error && reqIdentifier === "ADD_INGREDIENT") {
+        dispatch({ type: "ADD", ingredient: { id: data.name, ...reqExtra } });
+      }
+  }, [data, reqExtra, reqIdentifier, isLoading, error]);
 
   // when using useCallbake function you pass first the function and the second argument
   // is the dependencies of this function & this function has no dependecies so we will pass []
@@ -52,38 +64,51 @@ const Ingredients = () => {
     dispatch({ type: "SET", ingredients: fileterIngredients });
   }, []);
 
-  const addIngredientHandler = useCallback((ingredient) => {
-    // dispatchHttp({ type: "SEND" });
-    // fetch(
-    //   "https://react-hooks-18607-default-rtdb.firebaseio.com/ingredients.json",
-    //   {
-    //     method: "POST",
-    //     body: JSON.stringify(ingredient),
-    //     headers: { "Content-Type": "application/json" },
-    //   }
-    // )
-    //   .then((response) => {
-    //     dispatchHttp({ type: "RESPONSE" });
-    //     return response.json();
-    //   })
-    //   .then((resData) => {
-    //     // setUserIngredients((prevIngredients) => [
-    //     //   ...prevIngredients,
-    //     //   { id: resData.name, ...ingredient },
-    //     // ]);
-    //     dispatch({
-    //       type: "ADD",
-    //       ingredient: { id: resData.name, ...ingredient },
-    //     });
-    //   });
-  }, []);
+  const addIngredientHandler = useCallback(
+    (ingredient) => {
+      sendRequest(
+        "https://react-hooks-18607-default-rtdb.firebaseio.com/ingredients.json",
+        "POST",
+        JSON.stringify(ingredient),
+        ingredient,
+        "ADD_INGREDIENT"
+      );
+      // dispatchHttp({ type: "SEND" });
+      // fetch(
+      //   "https://react-hooks-18607-default-rtdb.firebaseio.com/ingredients.json",
+      //   {
+      //     method: "POST",
+      //     body: JSON.stringify(ingredient),
+      //     headers: { "Content-Type": "application/json" },
+      //   }
+      // )
+      //   .then((response) => {
+      //     dispatchHttp({ type: "RESPONSE" });
+      //     return response.json();
+      //   })
+      //   .then((resData) => {
+      //     // setUserIngredients((prevIngredients) => [
+      //     //   ...prevIngredients,
+      //     //   { id: resData.name, ...ingredient },
+      //     // ]);
+      //     dispatch({
+      //       type: "ADD",
+      //       ingredient: { id: resData.name, ...ingredient },
+      //     });
+      //   });
+    },
+    [sendRequest]
+  );
 
   const removeIngredientHandler = useCallback(
     (ingredientId) => {
       // setIsLoading(true);
       sendRequest(
         `https://react-hooks-18607-default-rtdb.firebaseio.com/ingredients/${ingredientId}.json`,
-        "DELETE"
+        "DELETE",
+        null,
+        ingredientId,
+        "REMOVE_INGREDIENT"
       );
     },
     [sendRequest]
