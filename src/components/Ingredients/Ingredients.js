@@ -1,12 +1,28 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useReducer, useEffect, useCallback } from "react";
 
 import IngredientForm from "./IngredientForm";
 import IngredientList from "./IngredientList";
 import ErrorModal from "../UI/ErrorModal";
 import Search from "./Search";
 
+// useReducer we define it outside the component
+// as it's recreated whenever the component rerendered w
+
+const ingredientReducer = (currentIngredients, action) => {
+  switch (action.type) {
+    case "SET":
+      return action.ingredients;
+    case "ADD":
+      return [...currentIngredients, action.ingredient];
+    case "DELETE":
+      return currentIngredients.filter((ing) => ing.id !== action.id);
+    default:
+      throw new Error("Should not get there!");
+  }
+};
 const Ingredients = () => {
-  const [userIngredient, setUserIngredients] = useState([]);
+  const [userIngredients, dispatch] = useReducer(ingredientReducer, []);
+  // const [userIngredient, setUserIngredients] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState();
   // this is rendered whenever this component is rerendered
@@ -22,13 +38,14 @@ const Ingredients = () => {
   // as we don't speciefiy a second argument here this will loged 2 times as we rendering this component twice
   // when we use setUserIngredients
   useEffect(() => {
-    console.log("RENDERING INGREDINETS", userIngredient);
-  }, [userIngredient]);
+    console.log("RENDERING INGREDINETS", userIngredients);
+  }, [userIngredients]);
 
   // when using useCallbake function you pass first the function and the second argument
   // is the dependencies of this function & this function has no dependecies so we will pass []
   const filterIngredientHandler = useCallback((fileterIngredients) => {
-    setUserIngredients(fileterIngredients);
+    // setUserIngredients(fileterIngredients);
+    dispatch({ type: "SET", ingredients: fileterIngredients });
   }, []);
 
   const addIngredientHandler = (ingredient) => {
@@ -46,10 +63,14 @@ const Ingredients = () => {
         return response.json();
       })
       .then((resData) => {
-        setUserIngredients((prevIngredients) => [
-          ...prevIngredients,
-          { id: resData.name, ...ingredient },
-        ]);
+        // setUserIngredients((prevIngredients) => [
+        //   ...prevIngredients,
+        //   { id: resData.name, ...ingredient },
+        // ]);
+        dispatch({
+          type: "ADD",
+          ingredient: { id: resData.name, ...ingredient },
+        });
       });
   };
 
@@ -63,9 +84,10 @@ const Ingredients = () => {
     )
       .then((res) => {
         setIsLoading(false);
-        setUserIngredients((prevIngredients) =>
-          prevIngredients.filter((ingredient) => ingredient.id !== ingredientId)
-        );
+        // setUserIngredients((prevIngredients) =>
+        //   prevIngredients.filter((ingredient) => ingredient.id !== ingredientId)
+        // );
+        dispatch({ type: "DELETE", id: ingredientId });
       })
       .catch((err) => {
         setError("Something went worng");
@@ -87,7 +109,7 @@ const Ingredients = () => {
       <section>
         <Search onLoadIngredients={filterIngredientHandler} />
         <IngredientList
-          ingredients={userIngredient}
+          ingredients={userIngredients}
           onRemoveItem={removeIngredientHandler}
         />
       </section>
